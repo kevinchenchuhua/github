@@ -37,6 +37,7 @@
 #include "rtc_base/criticalsection.h"
 #include "rtc_base/numerics/sequence_number_util.h"
 #include "rtc_base/sequenced_task_checker.h"
+#include "api/rtp_raw_packet_writer.h"
 
 namespace webrtc {
 
@@ -147,6 +148,11 @@ class RtpVideoStreamReceiver : public RtpData,
   void UpdateHistograms();
   bool IsRedEnabled() const;
   void InsertSpsPpsIntoTracker(uint8_t payload_type);
+
+  //chenchuhua
+  void InitRtpFile(const RTPHeader& header);
+  void LogRtpPacket(const uint8_t* packet, size_t packet_length, const RTPHeader& header);
+  std::unique_ptr<webrtc::test::RtpFileWriter> rtp_raw_file_;
 
   Clock* const clock_;
   // Ownership of this object lies with VideoReceiveStream, which owns |this|.

@@ -2243,8 +2243,10 @@ void WebRtcVideoChannel::WebRtcVideoReceiveStream::ConfigureCodecs(
     // that ignores all calls. The reason we can get into this state is that
     // the old decoder factory interface doesn't have a way to query supported
     // codecs.
-    if (!new_decoder)
-      new_decoder.reset(new NullVideoDecoder());
+
+    // chenchuhua 8/1/2018
+    // if (!new_decoder)
+    new_decoder.reset(new NullVideoDecoder());
 
     webrtc::VideoReceiveStream::Decoder decoder;
     decoder.decoder = new_decoder.get();
@@ -2408,6 +2410,8 @@ void WebRtcVideoChannel::WebRtcVideoReceiveStream::
 
 void WebRtcVideoChannel::WebRtcVideoReceiveStream::OnFrame(
     const webrtc::VideoFrame& frame) {
+//chenchuhua 8/1/2018, refer NullRenderer
+/*
   rtc::CritScope crit(&sink_lock_);
 
   if (first_frame_timestamp_ < 0)
@@ -2426,6 +2430,7 @@ void WebRtcVideoChannel::WebRtcVideoReceiveStream::OnFrame(
   }
 
   sink_->OnFrame(frame);
+*/
 }
 
 bool WebRtcVideoChannel::WebRtcVideoReceiveStream::IsDefaultStream() const {

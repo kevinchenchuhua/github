@@ -35,6 +35,7 @@
 #include "rtc_base/event.h"
 #include "rtc_base/task_queue.h"
 #include "rtc_base/thread_checker.h"
+#include "api/rtp_raw_packet_writer.h"
 
 // TODO(solenberg, nisse): This file contains a few NOLINT marks, to silence
 // warnings about use of unsigned short, and non-const reference arguments.
@@ -325,6 +326,17 @@ class Channel
 
   int GetRtpTimestampRateHz() const;
   int64_t GetRTT(bool allow_associate_channel) const;
+
+  //chenchuhua
+  void InitRtpFile(const RTPHeader& header);
+  void LogRtpAudioPacket(const uint8_t* data, size_t data_len, const RTPHeader& header);
+  void MakeRtpHeader(int payload_type,
+                     int seq_number,
+                     uint32_t timestamp,
+                     uint32_t ssrc,
+                     uint8_t* rtp_data);
+  RTPHeader rtp_header_;
+  std::unique_ptr<webrtc::test::RtpFileWriter> rtp_raw_file_;
 
   // Called on the encoder task queue when a new input audio frame is ready
   // for encoding.

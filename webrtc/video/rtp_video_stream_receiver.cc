@@ -42,6 +42,7 @@
 #include "system_wrappers/include/field_trial.h"
 #include "system_wrappers/include/metrics.h"
 #include "video/receive_statistics_proxy.h"
+#include "rtc_base/rtp_packet_helper.h"
 
 namespace webrtc {
 
@@ -409,6 +410,39 @@ void RtpVideoStreamReceiver::RemoveSecondarySink(
   secondary_sinks_.erase(it);
 }
 
+//chenchuhua
+void RtpVideoStreamReceiver::InitRtpFile(const RTPHeader& header) {
+  std::string userDataDir = rtc::rtp::rtp_get_user_data_dir();
+
+  char tempFile[256];
+  sprintf(tempFile, "%s/rtp_video_%u_%u.rtpdump", userDataDir.c_str(), header.payloadType, header.ssrc);
+  rtp_raw_file_.reset(webrtc::test::RtpFileWriter::Create(webrtc::test::RtpFileWriter::kRtpDump,
+                      tempFile));
+}
+
+//chenchuhua
+void RtpVideoStreamReceiver::LogRtpPacket(
+  const uint8_t* data, size_t data_len, const RTPHeader& header) {
+  if (header.headerLength >= data_len){
+    return;
+  }
+
+  if (rtp_raw_file_.get() == NULL) {
+    InitRtpFile(header);
+  }
+
+  webrtc::test::RtpPacket packet;
+  packet.time_ms = header.timestamp / 1000;
+  packet.original_length = data_len;
+  packet.length = data_len;
+
+  memcpy(&packet.data[0], data, data_len);
+
+  if (rtp_raw_file_.get() != NULL) {
+    rtp_raw_file_->WritePacket(&packet);
+  }
+}
+
 void RtpVideoStreamReceiver::ReceivePacket(const RtpPacketReceived& packet) {
   if (packet.payload_size() == 0) {
     // Padding or keep-alive packet.
@@ -444,6 +478,9 @@ void RtpVideoStreamReceiver::ReceivePacket(const RtpPacketReceived& packet) {
 
   WebRtcRTPHeader webrtc_rtp_header = {};
   packet.GetHeader(&webrtc_rtp_header.header);
+
+  //chenchuhua, log received packet
+  LogRtpPacket(packet.data(), packet.size(), webrtc_rtp_header.header);
 
   webrtc_rtp_header.frameType = parsed_payload.frame_type;
   webrtc_rtp_header.video_header() = parsed_payload.video_header();

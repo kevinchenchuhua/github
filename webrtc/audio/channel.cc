@@ -882,6 +882,65 @@ void Channel::OnRtpPacket(const RtpPacketReceived& packet) {
   ReceivePacket(packet.data(), packet.size(), header);
 }
 
+void Channel::InitRtpFile(const RTPHeader& header) {
+  //chenchuhua
+  rtp_header_.sequenceNumber = 1;
+  rtp_header_.timestamp = 960;
+
+  // get user data dir
+  std::string userDataDir = rtc::rtp::rtp_get_user_data_dir();
+
+  char tempFile[256];
+  sprintf(tempFile, "%s/rtp_audio_%u_%u.rtpdump", userDataDir.c_str(), header.payloadType, header.ssrc);
+  rtp_raw_file_.reset(webrtc::test::RtpFileWriter::Create(webrtc::test::RtpFileWriter::kRtpDump,
+                      tempFile));
+}
+
+void Channel::MakeRtpHeader(int payload_type,
+                   int seq_number,
+                   uint32_t timestamp,
+                   uint32_t ssrc,
+                   uint8_t* rtp_data) {
+  rtp_data[0] = 0x80;
+  rtp_data[1] = static_cast<uint8_t>(payload_type);
+  rtp_data[2] = (seq_number >> 8) & 0xFF;
+  rtp_data[3] = (seq_number) & 0xFF;
+  rtp_data[4] = timestamp >> 24;
+  rtp_data[5] = (timestamp >> 16) & 0xFF;
+  rtp_data[6] = (timestamp >> 8) & 0xFF;
+  rtp_data[7] = timestamp & 0xFF;
+  rtp_data[8] = ssrc >> 24;
+  rtp_data[9] = (ssrc >> 16) & 0xFF;
+  rtp_data[10] = (ssrc >> 8) & 0xFF;
+  rtp_data[11] = ssrc & 0xFF;
+}
+
+void Channel::LogRtpAudioPacket(const uint8_t* data, size_t data_len, const RTPHeader& header) {
+  //chenchuhua, initialize if needed
+  if (rtp_raw_file_.get() == NULL) {
+    InitRtpFile(header);
+  }
+
+  webrtc::test::RtpPacket packet;
+  packet.time_ms = (rtp_header_.timestamp - 960) / 48;
+  packet.original_length = data_len + 12;
+  packet.length = data_len + 12;
+
+  // copy rtp header
+  MakeRtpHeader(header.payloadType, rtp_header_.sequenceNumber, rtp_header_.timestamp, header.ssrc, packet.data);
+
+  // copy payload
+  memcpy(&packet.data[12], data, data_len);
+
+  // update rtp header for next packet
+  rtp_header_.sequenceNumber++;
+  rtp_header_.timestamp += 960;
+
+  if (rtp_raw_file_.get() != NULL) {
+    rtp_raw_file_->WritePacket(&packet);
+  }
+}
+
 bool Channel::ReceivePacket(const uint8_t* packet,
                             size_t packet_length,
                             const RTPHeader& header) {
@@ -896,8 +955,14 @@ bool Channel::ReceivePacket(const uint8_t* packet,
     webrtc_rtp_header.frameType = kEmptyFrame;
     return OnReceivedPayloadData(nullptr, 0, &webrtc_rtp_header);
   }
-  return OnReceivedPayloadData(payload, payload_data_length,
-                               &webrtc_rtp_header);
+
+  //chenchuhua
+  LogRtpAudioPacket(payload, payload_length, header);
+
+  //chenchuhua
+  return true;
+//  return OnReceivedPayloadData(payload, payload_data_length,
+//                               &webrtc_rtp_header);
 }
 
 int32_t Channel::ReceivedRTCPPacket(const uint8_t* data, size_t length) {

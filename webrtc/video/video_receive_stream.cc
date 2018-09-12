@@ -414,7 +414,11 @@ bool VideoReceiveStream::Decode() {
   if (frame) {
     int64_t now_ms = clock_->TimeInMilliseconds();
     RTC_DCHECK_EQ(res, video_coding::FrameBuffer::ReturnReason::kFrameFound);
-    int decode_result = video_receiver_.Decode(frame.get());
+
+    // chenchuhua, let this function reurn ok directly
+    //int decode_result = video_receiver_.Decode(frame.get());
+    int decode_result = WEBRTC_VIDEO_CODEC_OK;
+
     if (decode_result == WEBRTC_VIDEO_CODEC_OK ||
         decode_result == WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME) {
       keyframe_required_ = false;

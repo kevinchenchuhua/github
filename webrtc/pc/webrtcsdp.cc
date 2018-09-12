@@ -42,6 +42,7 @@
 #include "rtc_base/messagedigest.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/stringutils.h"
+#include "rtc_base/rtp_packet_helper.h"
 
 using cricket::AudioContentDescription;
 using cricket::Candidate;
@@ -1984,6 +1985,19 @@ bool ParseConnectionData(const std::string& line,
   return true;
 }
 
+//chenchuhua, log sdp content
+void LogSdpContent(const std::string& message){
+  // get user data dir
+  std::string tempDir = rtc::rtp::rtp_get_user_data_dir();
+  char chTemp[512];
+  sprintf(chTemp, "%s/content.sdp", tempDir.c_str());
+  FILE* fp = fopen(chTemp, "ab");
+  if (fp != NULL) {
+    fwrite(message.c_str(), sizeof(char), message.length(), fp);
+    fclose(fp);
+  }
+}
+
 bool ParseSessionDescription(const std::string& message,
                              size_t* pos,
                              std::string* session_id,
@@ -1994,6 +2008,10 @@ bool ParseSessionDescription(const std::string& message,
                              cricket::SessionDescription* desc,
                              SdpParseError* error) {
   std::string line;
+
+  //chenchuhua
+  LogSdpContent(message);
+  RTC_LOG(LS_WARNING) << "chenchuhua, parse sdp = " << message;
 
   desc->set_msid_supported(false);
 
